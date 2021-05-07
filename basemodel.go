@@ -27,7 +27,6 @@ func NewBaseModel(dsn string, data interface{}) (*BaseModel, error) {
 }
 
 func NewBaseModelWithCreated(dsn string, data interface{}) (*BaseModel, bool, error) {
-	created := false
 	t := reflect.TypeOf(data)
 	model := &BaseModel{
 		Type:      t,
@@ -85,6 +84,11 @@ func NewBaseModelWithCreated(dsn string, data interface{}) (*BaseModel, bool, er
 
 		model.dbTags = append(model.dbTags, dbTag)
 		model.qlTypes = append(model.qlTypes, qlType)
+	}
+	localIndexList, e := toIndexList(indexes)
+	if e != nil {
+		log.Println(e)
+		return nil, false, e
 	}
 
 	//desc
