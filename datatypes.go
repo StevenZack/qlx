@@ -20,22 +20,22 @@ func ToQlType(t reflect.Type, dbTag string) (string, error) {
 	}
 
 	switch t.Kind() {
-	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8, reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8, reflect.Float32, reflect.Float64:
+	case reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8, reflect.Float32, reflect.Float64:
 		name := t.String()
 		if isPtr {
 			return name, nil
 		}
-		return name + " not null default 0", nil
+		return name + " not null", nil
 	case reflect.String:
 		if isPtr {
 			return "string", nil
 		}
-		return "string not null default ''", nil
+		return "string not null", nil
 	case reflect.Bool:
 		if isPtr {
 			return "bool", nil
 		}
-		return "bool not null default false", nil
+		return "bool not null", nil
 	case reflect.Slice:
 		switch t.Elem().Kind() {
 		case reflect.Uint8:
