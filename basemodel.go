@@ -532,7 +532,7 @@ func (b *BaseModel) Truncate() error {
 }
 
 func (b *BaseModel) Delete(id int64) error {
-	query := `BEGIN TRANSACTION;delete from ` + b.TableName + ` where id()=$1`
+	query := `BEGIN TRANSACTION;delete from ` + b.TableName + ` where id()=$1;COMMIT;`
 	_, _, e := b.Pool.Run(ql.NewRWCtx(), query, id)
 	return e
 }
