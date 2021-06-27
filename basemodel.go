@@ -272,7 +272,7 @@ func (b *BaseModel) GetInsertSQL() ([]int, string) {
 	values.WriteString(")")
 
 	builder.WriteString(values.String())
-	builder.WriteString(";COMMIT;")
+	builder.WriteString(";COMMIT;select id() from " + b.TableName + " order by id() desc limit 1;")
 	return argsIndex, builder.String()
 }
 
@@ -289,7 +289,7 @@ func (b *BaseModel) GetSelectSQL() string {
 	return builder.String()
 }
 
-func (b *BaseModel) Insert(v interface{}) error {
+func (b *BaseModel) Insert(v interface{}) (interface{}, error) {
 	//validate
 	value := reflect.ValueOf(v)
 	t := value.Type()
@@ -298,7 +298,7 @@ func (b *BaseModel) Insert(v interface{}) error {
 		value = value.Elem()
 	}
 	if t.String() != b.Type.String() {
-		return errors.New("Wrong insert type:" + t.String() + " for table " + b.TableName)
+		return nil, errors.New("Wrong insert type:" + t.String() + " for table " + b.TableName)
 	}
 
 	//args
@@ -313,15 +313,23 @@ func (b *BaseModel) Insert(v interface{}) error {
 	rss, _, e := b.Pool.Run(ql.NewRWCtx(), query, args...)
 	if e != nil {
 		log.Println(e)
-		return fmt.Errorf("%w:`%s`", e, query)
+		return nil, fmt.Errorf("%w:`%s`", e, query)
 	}
+	var id interface{}
 	for _, rs := range rss {
-		rs.Do(false, func(data []interface{}) (more bool, err error) {
-			fmt.Println(data)
+		e = rs.Do(false, func(data []interface{}) (more bool, err error) {
+			if len(data) > 0 {
+				id = data[0]
+				return false, nil
+			}
 			return true, nil
 		})
+		if e != nil {
+			log.Println(e)
+			return nil, fmt.Errorf("%w:`%s`", e, query)
+		}
 	}
-	return nil
+	return id, nil
 }
 
 func (b *BaseModel) InsertAll(vs interface{}) error {
@@ -345,7 +353,7 @@ func (b *BaseModel) InsertAll(vs interface{}) error {
 			value = value.Elem()
 		}
 
-		e := b.Insert(value.Interface())
+		_, e := b.Insert(value.Interface())
 		if e != nil {
 			log.Println(e)
 			return e
@@ -544,3 +552,4 @@ func (b *BaseModel) DeleteWhere(where string, args ...interface{}) error {
 	_, _, e := b.Pool.Run(ql.NewRWCtx(), query)
 	return e
 }
+
